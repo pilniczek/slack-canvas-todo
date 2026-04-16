@@ -1,0 +1,11 @@
+{
+  "name": "slack-canvas-todo",
+  "description": "Automated daily to-do list powered by a Slack Canvas. Scans your Slack messages, saved items, Outlook Calendar, and Outlook inbox — updates a persistent Canvas with urgency icons and clickable links. Say 'install slack-canvas-todo' to get started.",
+  "version": "1.1.0",
+  "author": {
+    "name": "Tomáš Pilnaj",
+    "url": "https://github.com/pilniczek/slack-canvas-todo"
+  },
+  "homepage": "https://github.com/pilniczek/slack-canvas-todo",
+  "repository": "https://github.com/pilniczek/slack-canvas-todo"
+}

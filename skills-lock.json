@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "docs-consistency-check": {
+      "source": "pilniczek/docs-consistency-check",
+      "sourceType": "github",
+      "skillPath": "skills/docs-consistency-check/SKILL.md",
+      "computedHash": "dccd49ac459e347705cf34579ba9846d99837c37b9c6be55893850a82aab37e6"
+    },
+    "grill-me": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grill-me/SKILL.md",
+      "computedHash": "784f0dbb7403b0f00324bce9a112f715342777a0daee7bbb7385f9c6f0a170ea"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-creator/SKILL.md",
+      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
+    }
+  }
+}
