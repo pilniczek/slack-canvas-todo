@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "slack": {
+      "type": "managed",
+      "name": "Slack",
+      "description": "Required — reads messages, saved items, searches canvases, and sends DMs"
+    },
+    "microsoft-365": {
+      "type": "managed",
+      "name": "Microsoft 365",
+      "description": "Optional — scans Outlook Calendar for meeting prep items"
+    }
+  }
+}
