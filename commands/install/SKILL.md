@@ -157,10 +157,11 @@ Ask (AskUserQuestion, message: "Configure your Canvas layout:", three questions 
 Parse and update CATEGORIES, DEFAULT_CATEGORY, URGENCY_THRESHOLDS. Return to loop.
 
 #### → Schedule
-Ask (AskUserQuestion, message: "Configure the automation schedule:", three questions in one call):
+Ask (AskUserQuestion, message: "Configure the automation schedule:", four questions in one call):
 - **"How many checks per day? (spread over 12 hours)"** options: ["1", "2 (default)", "3", "4", "5", "7"]
 - **"First check time (max 12:00):"** pre-filled: "8:00"
 - **"Which days?"** options: ["Weekdays only (default)", "Every day"]
+- **"Timezone (IANA name, e.g. 'Europe/Prague'):"** pre-filled: TIMEZONE
 
 Compute check times:
 - N=1 → [FIRST_CHECK]
@@ -171,7 +172,8 @@ Compute check times:
   - N=5, 8:00 → [8:00, 11:00, 14:00, 17:00, 20:00]
   - N=7, 8:00 → [8:00, 10:00, 12:00, 14:00, 16:00, 18:00, 20:00]
 Validate FIRST_CHECK ≤ 12:00. Show computed times as hint.
-Update CHECKS_PER_DAY, FIRST_CHECK, SCHEDULE_DAYS. Return to loop.
+Validate the timezone by running `bash` with `test -f /usr/share/zoneinfo/[answer]`: if it fails, the name is unknown - tell the user and keep the previous TIMEZONE.
+Update CHECKS_PER_DAY, FIRST_CHECK, SCHEDULE_DAYS, TIMEZONE. Return to loop.
 
 ---
 

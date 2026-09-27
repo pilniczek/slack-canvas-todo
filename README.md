@@ -65,7 +65,7 @@ API calls are minimised via early-exit and append-only paths when nothing meanin
 
 Everything is collected interactively during install. To reconfigure, run **"install slack-canvas-todo"** again — if a task already exists you can overwrite it or create `daily-slack-todo-v2` alongside it for testing.
 
-Customisable: sources, ignored calendar categories/keywords, extra email folders, Canvas categories + default category for ambiguous items, urgency thresholds, checks per day (1, 2, 3, 4, 5, or 7 — 6 is skipped because it doesn't divide a 12-hour window into whole-hour slots), first-check time, weekdays vs every day. See [Customization loop](commands/install/SKILL.md#customization-loop--repeat-until-user-selects-create-task) for the full menu and defaults.
+Customisable: sources, ignored calendar categories/keywords, extra email folders, Canvas categories + default category for ambiguous items, urgency thresholds, checks per day (1, 2, 3, 4, 5, or 7 — 6 is skipped because it doesn't divide a 12-hour window into whole-hour slots), first-check time, weekdays vs every day, timezone. See [Customization loop](commands/install/SKILL.md#customization-loop--repeat-until-user-selects-create-task) for the full menu and defaults.
 
 ---
 
