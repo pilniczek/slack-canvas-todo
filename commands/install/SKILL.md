@@ -17,7 +17,8 @@ This installer creates task ID `daily-slack-todo`. If a task with that ID alread
 
 ### Verify Slack connection and detect user identity
 - **Check connection:** Call `slack_read_user_profile` for the authenticated user. If the call fails with an authorization or connection error, stop immediately and tell the user: "The Slack connector isn't set up yet. To connect it: open **Cowork → Settings (⚙) → Connectors**, find **Slack**, and click **Connect**. Authorize the connection, then come back and run the installer again."
-- **Extract identity:** From the response, extract: Slack user ID → USER_ID, workspace subdomain → WORKSPACE_DOMAIN (e.g. "mycompany" from "mycompany.slack.com").
+- **Extract identity:** From the response, extract: Slack user ID → USER_ID, workspace subdomain → WORKSPACE_DOMAIN (e.g. "mycompany" from "mycompany.slack.com"), IANA timezone (`tz` field, e.g. "Europe/Prague") → TIMEZONE.
+- **Timezone fallback:** If the profile has no `tz` value, ask via AskUserQuestion: **"Which timezone should the task use? (IANA name, e.g. 'Europe/Prague')"** (free-text response). Store as TIMEZONE.
 
 ### Detect or create Canvas
 - **Search for existing Canvas:** `slack_search_public_and_private` query `"TO DO" type:canvases` with `content_types="files"`.
@@ -27,7 +28,7 @@ This installer creates task ID `daily-slack-todo`. If a task with that ID alread
 If CANVAS_ID is null, ask via AskUserQuestion: "How far back should the first scan go?"
 Options: ["7 days", "14 days", "30 days", "3 months", "6 months (default)"]
 Store the selected number of days as INITIAL_LOOKBACK_DAYS (default: 180).
-Compute INITIAL_CUTOFF = today's date minus INITIAL_LOOKBACK_DAYS days, formatted as "YYYY-MM-DD, 00:00 CET" (use "CEST" instead if the date falls between the last Sunday of March and the last Sunday of October).
+Compute INITIAL_CUTOFF = today's date minus INITIAL_LOOKBACK_DAYS days, formatted as "YYYY-MM-DD, 00:00 [TZ_ABBR]", where TZ_ABBR is the abbreviation TIMEZONE uses on that date (e.g. "CET" or "CEST" for "Europe/Prague").
 
 Create a new Canvas with `slack_create_canvas`:
 - Title: "TO DO"
@@ -117,6 +118,7 @@ Compute schedule times from defaults: 2 checks, 8:00 start → 8:00 and 20:00.
 | Default category | To Learn |
 | Urgency | default |
 | Schedule | 2× daily · 8:00 + 20:00 · Weekdays only |
+| Timezone | Europe/Prague |
 ```
 
 Row rules:

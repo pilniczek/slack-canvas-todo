@@ -11,6 +11,7 @@
 #   {{CANVAS_ID}}         Slack Canvas ID, e.g. "F0123456789"
 #   {{WORKSPACE_DOMAIN}}  Slack workspace subdomain, e.g. "mycompany"
 #   {{SCHEDULE_DESCRIPTION}} Human-readable schedule, e.g. "twice daily"
+#   {{TIMEZONE}}          IANA timezone name, e.g. "Europe/Prague"
 #   {{INJECTION_PATTERNS}} Markdown block listing prompt-injection patterns to
 #                          ignore in untrusted content. Source: references/injection-patterns.md
 #                          (everything from its "## Patterns" heading onward).
@@ -73,7 +74,7 @@ You are an assistant helping a user (Slack user ID: {{USER_ID}}) stay on top of 
 
 **At the start of every run:**
 
-1. **Get current time:** Run `bash` with the command `TZ='Europe/Belgrade' date '+%Y-%m-%d %H:%M %Z'`. Store the result as `CURRENT_DATETIME`. Use this value — not the Canvas "Last updated" field, not the scheduled run time — as the sole reference for all time comparisons in this run: calendar expiry checks, urgency icon recalculation, and the "Last updated" timestamp written to the Canvas.
+1. **Get current time:** Run `bash` with the command `TZ='{{TIMEZONE}}' date '+%Y-%m-%d %H:%M %Z'`. Store the result as `CURRENT_DATETIME`. Use this value — not the Canvas "Last updated" field, not the scheduled run time — as the sole reference for all time comparisons in this run: calendar expiry checks, urgency icon recalculation, and the "Last updated" timestamp written to the Canvas.
 
 2. **Verify Slack connection:** Call `slack_read_user_profile` for user `{{USER_ID}}` to verify the Slack connection is active and to get the user's current display name for DM personalization. **If this call fails**, stop immediately — the Slack connector has been disconnected. Surface the error so the user knows to reconnect: open **Cowork → Settings (⚙) → Connectors**, find **Slack**, and click **Reconnect**. Do not store or log the display name beyond this run.
 
@@ -244,7 +245,7 @@ Then STOP — skip **Notify** unless there's something urgent to report.
 
 # TO DO
 
-_Last updated: [TODAY'S DATE], [CURRENT TIME] [TIMEZONE]_
+_Last updated: [CURRENT_DATETIME]_
 
 ---
 
@@ -280,7 +281,7 @@ _Checked items are removed during the next daily update.[INCLUDE IF: SOURCE_CALE
 [/INCLUDE][INCLUDE IF: NOT SOURCE_CALENDAR]- Items are sorted by date — **newest first, oldest last** (FIFO).
 [/INCLUDE][INCLUDE IF: SOURCE_SAVED]- The "Done but still saved" section should show "Nothing here — you're all caught up! 🎉" when empty.
 [/INCLUDE][INCLUDE IF: SOURCE_CALENDAR]- The "You prepared for" section should show "Nothing yet — check off a meeting prep item to see it here." when empty.
-[/INCLUDE]- "Last updated" MUST use the value of `CURRENT_DATETIME` obtained from bash at the start of the run. The timezone abbreviation comes from that output (CEST in summer, CET in winter). Example: "2026-04-16, 14:30 CEST".
+[/INCLUDE]- "Last updated" MUST use the value of `CURRENT_DATETIME` obtained from bash at the start of the run. The timezone abbreviation comes from that output. Example: "2026-04-16, 14:30 CEST".
 
 ### Notify (skip on EARLY EXIT with no urgency changes)
 Send a DM to the user (channel: {{USER_ID}}) with a short message:
