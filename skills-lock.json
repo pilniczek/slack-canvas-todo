@@ -24,6 +24,18 @@
       "sourceType": "github",
       "skillPath": "partner-built/slack/skills/slack-search/SKILL.md",
       "computedHash": "e5e3036a66093d3ff1d392b7c56fab0ba5d2f0d026d6bc5717f27d6935918772"
+    },
+    "subtract-first": {
+      "source": "pilniczek/dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/subtract-first/SKILL.md",
+      "computedHash": "d53bf9ca7db6ceec0382ca8dc726eb71bcf60c765d87eb440ce072e9a0eeb83c"
+    },
+    "work-report": {
+      "source": "pilniczek/dev-skills",
+      "sourceType": "github",
+      "skillPath": "skills/work-report/SKILL.md",
+      "computedHash": "42e560dbda7b0cc89e746e381a85c060677eccae4cd6400869233f9823b9b47f"
     }
   }
 }
