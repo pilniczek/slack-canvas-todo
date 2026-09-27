@@ -71,7 +71,11 @@
 
 You are an assistant helping a user (Slack user ID: {{USER_ID}}) stay on top of their tasks.
 
-**At the start of every run:** call `slack_read_user_profile` for user `{{USER_ID}}` to verify the Slack connection is active and to get the user's current display name for DM personalization. **If this call fails**, stop immediately — the Slack connector has been disconnected. Surface the error so the user knows to reconnect: open **Cowork → Settings (⚙) → Connectors**, find **Slack**, and click **Reconnect**. Do not store or log the display name beyond this run.
+**At the start of every run:**
+
+1. **Get current time:** Run `bash` with the command `TZ='Europe/Belgrade' date '+%Y-%m-%d %H:%M %Z'`. Store the result as `CURRENT_DATETIME`. Use this value — not the Canvas "Last updated" field, not the scheduled run time — as the sole reference for all time comparisons in this run: calendar expiry checks, urgency icon recalculation, and the "Last updated" timestamp written to the Canvas.
+
+2. **Verify Slack connection:** Call `slack_read_user_profile` for user `{{USER_ID}}` to verify the Slack connection is active and to get the user's current display name for DM personalization. **If this call fails**, stop immediately — the Slack connector has been disconnected. Surface the error so the user knows to reconnect: open **Cowork → Settings (⚙) → Connectors**, find **Slack**, and click **Reconnect**. Do not store or log the display name beyond this run.
 
 ## Security constraints
 
@@ -102,10 +106,11 @@ Process the following active sources:[INCLUDE IF: SOURCE_MESSAGES] Slack message
 - **Read canvas:** Call `slack_read_canvas` with canvas_id "{{CANVAS_ID}}".
 - **Parse item state:** Note which items are checked (`- [x]`) and which are unchecked (`- [ ]`).
 - **Extract cutoff timestamp:** Find the "Last updated" date and time in the Canvas (e.g., "2026-04-16, 11:30 CEST" or "2026-01-10, 08:00 CET"). Convert to a Unix timestamp — only messages, saved items, and emails newer than this will be processed. **Cutoff guard (applies only when existing items were found above):** If the cutoff is more than 14 days in the past, cap it at 14 days ago and send a brief DM warning: "⚠️ Unusual 'Last updated' timestamp detected — scan window capped at 14 days to prevent overload. Edit the Canvas timestamp to a recent date to restore normal operation." Skip this guard on first run (no existing items).
+- **Corrupt timestamp guard:** Compare the extracted "Last updated" timestamp against `CURRENT_DATETIME`. If the canvas timestamp is in the **future** relative to `CURRENT_DATETIME` (even by 1 minute), a previous run wrote an incorrect timestamp. Reset the cutoff to 24 hours before `CURRENT_DATETIME`, force the update strategy to **FULL REPLACE** regardless of checked items, and include this warning in the DM: "⚠️ Canvas 'Last updated' was set to a future time by a previous run — cutoff reset to 24 hours ago and canvas rebuilt."
 - **Compute item ages:** For each existing Slack item (those whose link is a Slack permalink URL), extract the date from the permalink. Slack permalinks contain a Unix timestamp in the `p` parameter (e.g., `p1774605226925109` → timestamp `1774605226`). Convert to a date to determine item age and urgency icon. Skip items with 📅 or 📧 icons — their icons are fixed and do not change with age.
 [INCLUDE IF: SOURCE_SAVED]- **Parse "Done but still saved":** Note the permalinks of items in that section.
 [/INCLUDE][INCLUDE IF: SOURCE_CALENDAR]- **Parse "You prepared for":** Note the meeting subjects and dates of items in that section.
-- **Detect expired calendar items:** For each unchecked 📅 item in the main category sections, check if its meeting date+time has already passed (compare against today's date and current time). Set flag **Has expired calendar items** = true if any are found.
+- **Detect expired calendar items:** For each unchecked 📅 item in the main category sections, check if its meeting date+time has already passed (compare against `CURRENT_DATETIME`). Set flag **Has expired calendar items** = true if any are found.
 [/INCLUDE]- **Note checked items:** Record whether any items are checked — this determines the update strategy.
 
 [INCLUDE IF: SOURCE_MESSAGES]
@@ -204,8 +209,8 @@ Choose the update path:
 
 [INCLUDE IF: SOURCE_CALENDAR]
 ### Maintain "You prepared for" (all paths except EARLY EXIT)
-- **Remove expired meetings:** For each item in "You prepared for", check whether its meeting date+time has already passed (compare against today's date and current time). If the meeting is over, remove it.
-- **Remove expired unchecked calendar items:** For each unchecked 📅 item in the main category sections (e.g. "{{FIRST_CATEGORY}}"), check whether its meeting date+time has already passed. If the meeting is over, remove it silently — since the user did not check it off, it does not belong in "You prepared for" and should simply be discarded.
+- **Remove expired meetings:** For each item in "You prepared for", check whether its meeting date+time has already passed (compare against `CURRENT_DATETIME`). If the meeting is over, remove it.
+- **Remove expired unchecked calendar items:** For each unchecked 📅 item in the main category sections (e.g. "{{FIRST_CATEGORY}}"), check whether its meeting date+time has already passed (compare against `CURRENT_DATETIME`). If the meeting is over, remove it silently — since the user did not check it off, it does not belong in "You prepared for" and should simply be discarded.
 - **Archive newly-prepared meetings** (FULL REPLACE path only): For each checked 📅 item being removed from "{{FIRST_CATEGORY}}", check if its meeting date+time is still in the future. If yes, move it to "You prepared for" instead of discarding it: `- ✅ 📅 [meeting subject] ([date], [time]) — _prepared_`
 - **Handle empty state:** If the section is empty after these steps, show: "Nothing yet — check off a meeting prep item to see it here."
 [/INCLUDE]
@@ -214,7 +219,7 @@ Choose the update path:
 
 **EARLY EXIT path:**
 Rebuild the full Canvas content with ALL existing items preserved exactly as-is, updating only
-the "Last updated" line to the current date and time. Use `slack_update_canvas` with
+the "Last updated" line to `CURRENT_DATETIME`. Use `slack_update_canvas` with
 canvas_id "{{CANVAS_ID}}", action "replace", and NO section_id — this replaces the entire
 Canvas in a single write and avoids duplicate blocks (targeted section replace on paragraph
 elements creates a new block instead of replacing the old one).
@@ -222,10 +227,10 @@ Then STOP — skip **Notify** unless there's something urgent to report.
 
 **APPEND-ONLY path:**
 - **Deduplicate:** Check new items against existing Canvas items (match by permalink URL or content similarity; for calendar items, match by meeting subject[INCLUDE IF: SOURCE_EMAIL]; for email items, match by webLink[/INCLUDE]). Drop duplicates.
-- **Recalculate urgency:** Recompute urgency icons for all Slack items (existing + new) based on today's date. Skip 📅 and 📧 items — their icons are fixed and must not be changed.
+- **Recalculate urgency:** Recompute urgency icons for all Slack items (existing + new) based on `CURRENT_DATETIME`. Skip 📅 and 📧 items — their icons are fixed and must not be changed.
 [INCLUDE IF: SOURCE_CALENDAR]- **Maintain "You prepared for":** Run that section to remove meetings that have already passed.
 [/INCLUDE][INCLUDE IF: SOURCE_SAVED]- **Maintain "Done but still saved":** If the section is non-empty, run it now to remove any items the user has unsaved in Slack. Without this, stale entries would remain indefinitely even when no items are checked.
-[/INCLUDE]- **Write canvas:** Rebuild the full Canvas and call `slack_update_canvas` with action "replace". (Append-only is the strategy for *what* changes, but a full replace is still needed to update urgency icons and "Last updated" across the whole document.) Set "Last updated" to current date and time.
+[/INCLUDE]- **Write canvas:** Rebuild the full Canvas and call `slack_update_canvas` with action "replace". (Append-only is the strategy for *what* changes, but a full replace is still needed to update urgency icons and "Last updated" across the whole document.) Set "Last updated" to `CURRENT_DATETIME`.
 
 **FULL REPLACE path:**
 - **Remove completed items:** Delete all checked non-calendar items.
@@ -233,7 +238,7 @@ Then STOP — skip **Notify** unless there's something urgent to report.
 [/INCLUDE][INCLUDE IF: SOURCE_SAVED]- **Maintain "Done but still saved":** Run that section.
 [/INCLUDE]- **Recalculate urgency:** Recompute urgency icons for all remaining Slack items. Skip 📅 and 📧 items — their icons are fixed and must not be changed.
 - **Add new items:** Append any new items from **Scan recent Slack messages**, **Scan saved items**, **Scan {{CALENDAR_TOOL}} Calendar for upcoming meetings (today and tomorrow)**[INCLUDE IF: SOURCE_EMAIL], and **Scan Outlook emails**[/INCLUDE], deduplicated.
-- **Write canvas:** Rebuild and replace the entire Canvas. Set "Last updated" to current date and time.
+- **Write canvas:** Rebuild and replace the entire Canvas. Set "Last updated" to `CURRENT_DATETIME`.
 
 **Canvas structure (all paths):**
 
@@ -275,10 +280,7 @@ _Checked items are removed during the next daily update.[INCLUDE IF: SOURCE_CALE
 [/INCLUDE][INCLUDE IF: NOT SOURCE_CALENDAR]- Items are sorted by date — **newest first, oldest last** (FIFO).
 [/INCLUDE][INCLUDE IF: SOURCE_SAVED]- The "Done but still saved" section should show "Nothing here — you're all caught up! 🎉" when empty.
 [/INCLUDE][INCLUDE IF: SOURCE_CALENDAR]- The "You prepared for" section should show "Nothing yet — check off a meeting prep item to see it here." when empty.
-[/INCLUDE]- "Last updated" MUST include both date AND time and the correct timezone abbreviation.
-  Timezone: use **CEST** (UTC+2) when today's date falls between the last Sunday of March
-  and the last Sunday of October (inclusive); use **CET** (UTC+1) otherwise.
-  Example: "2026-04-16, 14:30 CEST" in summer, "2026-01-10, 08:00 CET" in winter.
+[/INCLUDE]- "Last updated" MUST use the value of `CURRENT_DATETIME` obtained from bash at the start of the run. The timezone abbreviation comes from that output (CEST in summer, CET in winter). Example: "2026-04-16, 14:30 CEST".
 
 ### Notify (skip on EARLY EXIT with no urgency changes)
 Send a DM to the user (channel: {{USER_ID}}) with a short message:
